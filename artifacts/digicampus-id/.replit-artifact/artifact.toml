@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "DigiCampus ID"
+description = "A secure digital college identity and verification system for students, campus verifiers, and administrators. Students receive approved digital IDs with private QR verification tokens, while staff can verify IDs and manage campus access."
+version = "1.0.0"
+id = "artifacts/digicampus-id"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20235
+
+[services.development]
+run = "pnpm --filter @workspace/digicampus-id run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/digicampus-id", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/digicampus-id/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20235"
+BASE_PATH = "/"

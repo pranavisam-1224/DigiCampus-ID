@@ -3,13 +3,15 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: DigiCampus ID digital identity and campus verification API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: identity
+  - name: verification
+  - name: admin
 paths:
   /healthz:
     get:
@@ -24,13 +26,680 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /departments:
+    get:
+      operationId: listDepartments
+      tags: [identity]
+      summary: List departments available for registration
+      responses:
+        "200":
+          description: Departments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Department" }
+  /me:
+    get:
+      operationId: getMe
+      tags: [identity]
+      summary: Get the signed-in user's campus account and onboarding state
+      responses:
+        "200":
+          description: Current account
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentAccount" }
+        "401": { description: Sign-in required }
+  /registrations:
+    post:
+      operationId: createRegistration
+      tags: [identity]
+      summary: Submit a student or verifier registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegistrationInput" }
+      responses:
+        "201":
+          description: Registration submitted for review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentAccount" }
+        "400": { description: Invalid registration }
+        "409": { description: Account already registered }
+  /student/profile:
+    get:
+      operationId: getStudentProfile
+      tags: [identity]
+      summary: Get the signed-in student's profile
+      responses:
+        "200":
+          description: Student profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentProfile" }
+        "403": { description: Student access required }
+    patch:
+      operationId: updateStudentProfile
+      tags: [identity]
+      summary: Update the signed-in student's profile details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudentProfileUpdate" }
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentProfile" }
+  /student/digital-id:
+    get:
+      operationId: getStudentDigitalId
+      tags: [identity]
+      summary: Get the student's digital ID and private QR URL
+      responses:
+        "200":
+          description: Digital ID
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DigitalId" }
+        "404": { description: No approved ID has been issued }
+  /student/verifications:
+    get:
+      operationId: listStudentVerifications
+      tags: [identity]
+      summary: List recent scans of the signed-in student's ID
+      responses:
+        "200":
+          description: Verification history
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/VerificationLog" }
+  /student/requests:
+    get:
+      operationId: getStudentRequests
+      tags: [identity]
+      summary: List the student's lost ID and correction requests
+      responses:
+        "200":
+          description: Student requests
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentRequests" }
+  /student/lost-reports:
+    post:
+      operationId: createLostReport
+      tags: [identity]
+      summary: Report a lost or compromised ID and suspend it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LostReportInput" }
+      responses:
+        "201":
+          description: Report created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LostReport" }
+  /student/correction-requests:
+    post:
+      operationId: createCorrectionRequest
+      tags: [identity]
+      summary: Request a correction to the verified student record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CorrectionRequestInput" }
+      responses:
+        "201":
+          description: Request submitted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CorrectionRequest" }
+  /verifier/summary:
+    get:
+      operationId: getVerifierSummary
+      tags: [verification]
+      summary: Get verifier activity summary
+      responses:
+        "200":
+          description: Verifier summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VerifierSummary" }
+  /verifications/qr:
+    post:
+      operationId: verifyQrToken
+      tags: [verification]
+      summary: Validate a private QR token and log the attempt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/QrVerificationInput" }
+      responses:
+        "200":
+          description: Status with minimum necessary student information
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VerificationResult" }
+        "403": { description: Active verifier account required }
+        "429": { description: Too many verification attempts }
+  /verifications/manual:
+    post:
+      operationId: verifyStudentId
+      tags: [verification]
+      summary: Verify by student ID and log the attempt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ManualVerificationInput" }
+      responses:
+        "200":
+          description: Status with minimum necessary student information
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VerificationResult" }
+        "403": { description: Active verifier account required }
+        "429": { description: Too many verification attempts }
+  /admin/summary:
+    get:
+      operationId: getAdminSummary
+      tags: [admin]
+      summary: Get campus identity and verification statistics
+      responses:
+        "200":
+          description: Admin dashboard summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminSummary" }
+        "403": { description: Admin access required }
+  /admin/registrations:
+    get:
+      operationId: listRegistrations
+      tags: [admin]
+      summary: List pending student and verifier registrations
+      responses:
+        "200":
+          description: Pending registrations
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Registration" }
+  /admin/registrations/{userId}/decision:
+    post:
+      operationId: decideRegistration
+      tags: [admin]
+      summary: Approve or reject a registration
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegistrationDecision" }
+      responses:
+        "200":
+          description: Registration decision applied
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Registration" }
+        "404": { description: Registration not found }
+  /admin/students:
+    get:
+      operationId: listStudents
+      tags: [admin]
+      summary: Search and filter student records
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema: { type: string }
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, pending, active, suspended, revoked, expired]
+      responses:
+        "200":
+          description: Student records
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/StudentRecord" }
+    post:
+      operationId: createStudent
+      tags: [admin]
+      summary: Add a student record for a campus email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminStudentInput" }
+      responses:
+        "201":
+          description: Student created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentRecord" }
+  /admin/students/{studentId}:
+    patch:
+      operationId: updateStudent
+      tags: [admin]
+      summary: Edit student identity and enrollment fields
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminStudentUpdate" }
+      responses:
+        "200":
+          description: Updated student
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentRecord" }
+  /admin/ids/{id}/status:
+    patch:
+      operationId: updateDigitalIdStatus
+      tags: [admin]
+      summary: Activate, suspend, or revoke a digital ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DigitalIdStatusUpdate" }
+      responses:
+        "200":
+          description: Updated digital ID
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DigitalId" }
+  /admin/ids/{id}/reissue:
+    post:
+      operationId: reissueDigitalId
+      tags: [admin]
+      summary: Revoke the old QR token and issue a new token
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Reissued digital ID
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DigitalId" }
+  /admin/verifications:
+    get:
+      operationId: listVerificationLogs
+      tags: [admin]
+      summary: Review campus verification activity
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        "200":
+          description: Recent verification attempts
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/VerificationLog" }
+  /admin/departments:
+    get:
+      operationId: listAdminDepartments
+      tags: [admin]
+      summary: List departments for administration
+      responses:
+        "200":
+          description: Departments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Department" }
+    post:
+      operationId: createDepartment
+      tags: [admin]
+      summary: Add a department
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DepartmentInput" }
+      responses:
+        "201":
+          description: Created department
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Department" }
+  /admin/departments/{id}:
+    patch:
+      operationId: updateDepartment
+      tags: [admin]
+      summary: Rename a department or change its availability
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DepartmentUpdate" }
+      responses:
+        "200":
+          description: Updated department
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Department" }
+  /admin/requests:
+    get:
+      operationId: listAdminRequests
+      tags: [admin]
+      summary: Review student correction requests and lost ID reports
+      responses:
+        "200":
+          description: Student requests
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminRequests" }
 components:
   schemas:
     HealthStatus:
       type: object
       properties:
-        status:
-          type: string
-      required:
-        - status
+        status: { type: string }
+      required: [status]
+    Department:
+      type: object
+      required: [id, name, code, isActive]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        code: { type: string }
+        isActive: { type: boolean }
+    DepartmentInput:
+      type: object
+      required: [name, code]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 100 }
+        code: { type: string, minLength: 2, maxLength: 12 }
+    DepartmentUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 2, maxLength: 100 }
+        code: { type: string, minLength: 2, maxLength: 12 }
+        isActive: { type: boolean }
+    CurrentAccount:
+      type: object
+      required: [id, email, fullName, role, status, needsRegistration]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        fullName: { type: string }
+        role: { type: string, enum: [student, verifier, admin, unregistered] }
+        status: { type: string, enum: [pending, active, rejected, suspended, unregistered] }
+        needsRegistration: { type: boolean }
+    RegistrationInput:
+      type: object
+      required: [role, fullName]
+      properties:
+        role: { type: string, enum: [student, verifier] }
+        fullName: { type: string, minLength: 2, maxLength: 120 }
+        studentId: { type: string, minLength: 2, maxLength: 40 }
+        departmentId: { type: string, format: uuid }
+        course: { type: string, minLength: 2, maxLength: 120 }
+        yearOfStudy: { type: integer, minimum: 1, maximum: 10 }
+        photoUrl: { type: ["string", "null"], format: uri, maxLength: 500 }
+        validityEnd: { type: string, format: date }
+    StudentProfile:
+      type: object
+      required: [id, userId, fullName, email, studentId, departmentId, departmentName, course, yearOfStudy, status]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        studentId: { type: string }
+        departmentId: { type: string, format: uuid }
+        departmentName: { type: string }
+        course: { type: string }
+        yearOfStudy: { type: integer }
+        photoUrl: { type: ["string", "null"], format: uri }
+        status: { type: string, enum: [pending, active, suspended, revoked, expired] }
+    StudentProfileUpdate:
+      type: object
+      properties:
+        course: { type: string, minLength: 2, maxLength: 120 }
+        yearOfStudy: { type: integer, minimum: 1, maximum: 10 }
+        photoUrl: { type: ["string", "null"], format: uri, maxLength: 500 }
+    DigitalId:
+      type: object
+      required: [id, studentId, fullName, email, departmentName, course, yearOfStudy, status, issuedAt, expiresAt, qrUrl]
+      properties:
+        id: { type: string, format: uuid }
+        studentId: { type: string }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        departmentName: { type: string }
+        course: { type: string }
+        yearOfStudy: { type: integer }
+        photoUrl: { type: ["string", "null"], format: uri }
+        status: { type: string, enum: [active, suspended, revoked, expired] }
+        issuedAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date }
+        qrUrl: { type: string, format: uri }
+    VerificationLog:
+      type: object
+      required: [id, result, method, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        result: { type: string, enum: [verified, invalid, suspended, expired, revoked] }
+        method: { type: string, enum: [qr, manual] }
+        studentName: { type: ["string", "null"] }
+        studentId: { type: ["string", "null"] }
+        departmentName: { type: ["string", "null"] }
+        verifierName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+    LostReportInput:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 5, maxLength: 1000 }
+    LostReport:
+      type: object
+      required: [id, reason, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        reason: { type: string }
+        status: { type: string, enum: [open, resolved] }
+        createdAt: { type: string, format: date-time }
+    CorrectionRequestInput:
+      type: object
+      required: [field, requestedValue, reason]
+      properties:
+        field: { type: string, enum: [fullName, studentId, department, course, yearOfStudy] }
+        requestedValue: { type: string, minLength: 1, maxLength: 200 }
+        reason: { type: string, minLength: 5, maxLength: 1000 }
+    CorrectionRequest:
+      type: object
+      required: [id, field, requestedValue, reason, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        field: { type: string }
+        requestedValue: { type: string }
+        reason: { type: string }
+        status: { type: string, enum: [pending, approved, rejected] }
+        createdAt: { type: string, format: date-time }
+    StudentRequests:
+      type: object
+      required: [lostReports, corrections]
+      properties:
+        lostReports:
+          type: array
+          items: { $ref: "#/components/schemas/LostReport" }
+        corrections:
+          type: array
+          items: { $ref: "#/components/schemas/CorrectionRequest" }
+    QrVerificationInput:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, minLength: 24, maxLength: 512 }
+    ManualVerificationInput:
+      type: object
+      required: [studentId]
+      properties:
+        studentId: { type: string, minLength: 2, maxLength: 40 }
+    VerificationResult:
+      type: object
+      required: [result, checkedAt]
+      properties:
+        result: { type: string, enum: [verified, invalid, suspended, expired, revoked] }
+        checkedAt: { type: string, format: date-time }
+        studentName: { type: ["string", "null"] }
+        studentId: { type: ["string", "null"] }
+        departmentName: { type: ["string", "null"] }
+        course: { type: ["string", "null"] }
+        yearOfStudy: { type: ["integer", "null"] }
+        expiresAt: { type: ["string", "null"], format: date }
+    VerifierSummary:
+      type: object
+      required: [todayTotal, successfulToday, failedToday, recent]
+      properties:
+        todayTotal: { type: integer }
+        successfulToday: { type: integer }
+        failedToday: { type: integer }
+        recent:
+          type: array
+          items: { $ref: "#/components/schemas/VerificationLog" }
+    AdminSummary:
+      type: object
+      required: [totalStudents, activeIds, pendingApprovals, failedVerificationsToday, totalVerifications, recent]
+      properties:
+        totalStudents: { type: integer }
+        activeIds: { type: integer }
+        pendingApprovals: { type: integer }
+        failedVerificationsToday: { type: integer }
+        totalVerifications: { type: integer }
+        recent:
+          type: array
+          items: { $ref: "#/components/schemas/VerificationLog" }
+    Registration:
+      type: object
+      required: [userId, studentRecordId, role, email, fullName, status, submittedAt, departmentName, studentId, course, yearOfStudy]
+      properties:
+        userId: { type: string, format: uuid }
+        studentRecordId: { type: ["string", "null"], format: uuid }
+        role: { type: string, enum: [student, verifier] }
+        email: { type: string, format: email }
+        fullName: { type: string }
+        status: { type: string, enum: [pending, active, rejected, suspended] }
+        submittedAt: { type: string, format: date-time }
+        departmentName: { type: ["string", "null"] }
+        studentId: { type: ["string", "null"] }
+        course: { type: ["string", "null"] }
+        yearOfStudy: { type: ["integer", "null"] }
+    RegistrationDecision:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, enum: [approve, reject] }
+    StudentRecord:
+      type: object
+      required: [id, userId, fullName, email, studentId, departmentId, departmentName, course, yearOfStudy, status, idStatus]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: ["string", "null"], format: uuid }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        studentId: { type: string }
+        departmentId: { type: string, format: uuid }
+        departmentName: { type: string }
+        course: { type: string }
+        yearOfStudy: { type: integer }
+        photoUrl: { type: ["string", "null"], format: uri }
+        status: { type: string, enum: [pending, active, suspended, revoked, expired] }
+        idStatus: { type: ["string", "null"], enum: [active, suspended, revoked, expired, null] }
+    AdminStudentInput:
+      type: object
+      required: [email, fullName, studentId, departmentId, course, yearOfStudy, validityEnd]
+      properties:
+        email: { type: string, format: email }
+        fullName: { type: string, minLength: 2, maxLength: 120 }
+        studentId: { type: string, minLength: 2, maxLength: 40 }
+        departmentId: { type: string, format: uuid }
+        course: { type: string, minLength: 2, maxLength: 120 }
+        yearOfStudy: { type: integer, minimum: 1, maximum: 10 }
+        photoUrl: { type: ["string", "null"], format: uri, maxLength: 500 }
+        validityEnd: { type: string, format: date }
+    AdminStudentUpdate:
+      type: object
+      properties:
+        fullName: { type: string, minLength: 2, maxLength: 120 }
+        studentId: { type: string, minLength: 2, maxLength: 40 }
+        departmentId: { type: string, format: uuid }
+        course: { type: string, minLength: 2, maxLength: 120 }
+        yearOfStudy: { type: integer, minimum: 1, maximum: 10 }
+        photoUrl: { type: ["string", "null"], format: uri, maxLength: 500 }
+        validityEnd: { type: string, format: date }
+    DigitalIdStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [active, suspended, revoked] }
+    AdminRequests:
+      type: object
+      required: [lostReports, corrections]
+      properties:
+        lostReports:
+          type: array
+          items:
+            allOf:
+              - $ref: "#/components/schemas/LostReport"
+              - type: object
+                required: [studentName, studentId]
+                properties:
+                  studentName: { type: string }
+                  studentId: { type: string }
+        corrections:
+          type: array
+          items:
+            allOf:
+              - $ref: "#/components/schemas/CorrectionRequest"
+              - type: object
+                required: [studentName, studentId]
+                properties:
+                  studentName: { type: string }
+                  studentId: { type: string }
 

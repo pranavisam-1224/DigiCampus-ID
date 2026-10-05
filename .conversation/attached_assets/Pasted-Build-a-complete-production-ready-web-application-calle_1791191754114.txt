@@ -1,0 +1,99 @@
+Build a complete, production-ready web application called **DigiCampus ID – Digital College ID & Verification System**.
+
+Tech stack:
+- React.js + Tailwind CSS
+- Node.js + Express.js
+- PostgreSQL / Supabase
+- Zod for validation
+- QR code generation and scanning
+- Secure authentication and role-based access
+
+Core idea:
+Create a secure digital college ID system that replaces/supplements physical ID cards. Students receive a verified digital ID with a unique QR code. Authorized verifiers can scan the QR code and instantly check whether the student's ID is genuine and active.
+
+Roles:
+1. Student
+2. Verifier
+3. Admin
+
+Student features:
+- Register/login
+- Profile
+- Digital college ID card
+- Student photo, name, student ID, department, course, year and validity
+- Unique QR code
+- Download/print ID
+- View verification history
+- Report lost/compromised ID
+- Request profile corrections
+
+Verifier features:
+- Login
+- QR scanner
+- Manual student ID verification
+- Show Verified / Invalid / Suspended / Expired / Revoked status
+- Display only necessary student information
+- Store every verification attempt
+
+Admin features:
+- Secure admin dashboard
+- Approve/reject student registrations
+- Add/edit students
+- Activate, suspend, revoke and reissue IDs
+- Manage departments
+- View verification history
+- Dashboard statistics such as total students, active IDs, pending approvals and failed verifications
+
+QR security:
+- QR must contain only a secure random verification token/URL.
+- Never expose passwords, database IDs or sensitive student information.
+- Validate the token server-side.
+- Store verification events in PostgreSQL.
+
+Database tables:
+- users
+- students
+- departments
+- digital_ids
+- verification_logs
+- correction_requests
+- lost_id_reports
+
+Required pages:
+- Landing page
+- Login
+- Student registration
+- Student dashboard
+- Digital ID
+- Profile
+- Verification page
+- QR scanner
+- Verifier dashboard
+- Admin dashboard
+- Student management
+- Verification logs
+- Department management
+
+Security:
+- Secure password hashing
+- Protected routes
+- Server-side role authorization
+- Zod validation
+- Parameterized database queries
+- Rate limiting
+- Secure QR tokens
+- No hard-coded secrets
+- Environment variables for credentials
+
+Make the UI modern, professional, responsive and suitable for a real college.
+
+The main demo flow must work completely:
+
+Student registers → Admin approves → Digital ID is generated → QR code is created → Verifier scans QR → Backend validates ID → Verification result is displayed → Verification is logged → Admin sees the activity.
+
+Do not create a mockup or leave placeholder buttons. Implement the frontend, backend, database, authentication, QR verification and all major features end-to-end.
+
+Make the project fully runnable in Replit and provide a clear README with setup and deployment instructions.
+
+Project name: **DigiCampus ID**
+Tagline: **"One Digital Identity. Instant Verification. Smarter Campus."**
